@@ -37,23 +37,28 @@ export default {
 
 		const rawPStringVex: string[] = []
 
+		const rawPixA = inputImageA.get_raw_pixels()
+		const rawPixB = inputImageB.get_raw_pixels()
 
-		//for (let i = 0; i < rawPixA.length; i += 4) {
-		//	rawPixVex.push({
-		//		r: rawPixA[i],
-		//		g: rawPixA[i + 1],
-		//		b: rawPixA[i + 2],
-		//		a: rawPixA[i + 3],
-		//	})
-		//
-		//
-		//	rawPixA[i + 3] !== 0 && rawPStringVex.push(JSON.stringify({
-		//		r: rawPixA[i],
-		//		g: rawPixA[i + 1],
-		//		b: rawPixA[i + 2],
-		//		a: rawPixA[i + 3],
-		//	}))
-		//}
+		for (let i = 0; i < rawPixA.length; i += 4) {
+			rawPixVex.push({
+				r: rawPixA[i],
+				g: rawPixA[i + 1],
+				b: rawPixA[i + 2],
+				a: rawPixA[i + 3],
+			})
+
+
+			rawPixA[i + 3] !== 0 && rawPStringVex.push(JSON.stringify({
+				r: rawPixA[i],
+				g: rawPixA[i + 1],
+				b: rawPixA[i + 2],
+				a: rawPixA[i + 3],
+			}))
+		}
+
+
+		console.log([... new Set(rawPStringVex)].map(x => JSON.parse(x)))
 
 		const resizedB = resize(
 			inputImageB,
@@ -62,8 +67,6 @@ export default {
 			SamplingFilter.Nearest
 		);
 
-		const rawPixA = inputImageA.get_raw_pixels()
-		const rawPixB = inputImageB.get_raw_pixels()
 
 		const newImageRawArray: number[][] = []
 
@@ -83,12 +86,13 @@ export default {
 					a: rawPixB[i + 3],
 				}
 
+				newImageRawArray.push(Object.values(sliceImageA))
 
-				if (sliceImageA.a === 0) {
-					newImageRawArray.push(Object.values(sliceImageA))
-				} else {
-					newImageRawArray.push(Object.values(sliceImageB))
-				}
+				//if (sliceImageA.a === 0) {
+				//	newImageRawArray.push(Object.values(sliceImageA))
+				//} else {
+				//	newImageRawArray.push(Object.values(sliceImageB))
+				//}
 			}
 
 
@@ -116,7 +120,7 @@ export default {
 			"exclusion"
 		]
 
-		blend(inputImageA, resizedB, blendModes[6])
+		//blend(inputImageA, resizedB, blendModes[6])
 
 
 		const flatIntArray = newImageRawArray.flat()
@@ -124,35 +128,29 @@ export default {
 		console.log(flatIntArray.slice(0, 20))
 
 
-		const buffer = new ArrayBuffer(flatIntArray.length);
-		const uint8Array = new Uint8Array(buffer);
 
-		// Copy the data into the Uint8Array
+		const clampedArray = new Uint8ClampedArray(flatIntArray)
+
+		console.log(clampedArray.slice(-10))
+
 		for (let i = 0; i < flatIntArray.length; i++) {
-			uint8Array[i] = flatIntArray[i];
+			clampedArray[i] = flatIntArray[i]
 		}
 
-		console.log(buffer.slice(0, 10))
-		console.log(uint8Array.slice(0, 10))
-		//const rawPStringArrayBuff = new Uint8ClampedArray(flatIntArray)
-
-		//console.log(rawPStringArrayBuff.slice(-20))
-
 		let f = inputImageA.get_image_data()
-		f.raw_pixels = flatIntArray
+
+		const { data, ...rest } = f
+		console.log(rest)
+
+		//f.raw_pixels = flatIntArray
+		//console.log(f)
 
 		inputImageA.set_imgdata(f)
 
-		//const newImgBytes = PhotonImage.new_from_byteslice(uint8Array)
-		//const newOutputBytes = newImgBytes.get_bytes_webp()
 
 		// resize image using photon
 		// get webp bytes
 		const outputBytes = inputImageA.get_bytes_webp();
-
-		// for other formats
-		// png  : outputImage.get_bytes();
-		// jpeg : outputImage.get_bytes_jpeg(quality);
 
 		// call free() method to free memory
 		inputImageA.free();
