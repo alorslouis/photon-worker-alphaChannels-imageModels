@@ -11,40 +11,54 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { PhotonImage, SamplingFilter, resize, emboss } from "@cf-wasm/photon";
+import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
 
 export default {
-	async fetch() {
+	async fetch(request, env, ctx): Promise<Response> {
 		// url of image to fetch
-		const imageUrl = "https://avatars.githubusercontent.com/u/314135";
 
 		// fetch image and get the Uint8Array instance
-		const inputBytes = await fetch(imageUrl)
-			.then((res) => res.arrayBuffer())
-			.then((buffer) => new Uint8Array(buffer));
+		const formData = await request.formData();
+		const imageFile = formData.get('image1');
+		const imageFileTwo = formData.get('image2');
+
+		if (!imageFile || typeof imageFile === "string" || !imageFileTwo || typeof imageFileTwo === "string") {
+			return new Response('image file error', { status: 400 });
+		}
+
+		// Convert the image file to a Uint8Array
+		// image A
+		const arrayBufferA = await imageFile.arrayBuffer();
+		const inputBytesA = new Uint8Array(arrayBufferA);
+
+		// image B
+		const arrayBufferB = await imageFileTwo.arrayBuffer();
+		const inputBytesB = new Uint8Array(arrayBufferB);
 
 		// create a PhotonImage instance
-		const inputImage = PhotonImage.new_from_byteslice(inputBytes);
+		const inputImageA = PhotonImage.new_from_byteslice(inputBytesA);
+		const inputImageB = PhotonImage.new_from_byteslice(inputBytesB);
 
-		// resize image using photon
-		const outputImage = resize(
-			inputImage,
-			inputImage.get_width() * 2,
-			inputImage.get_height() * 2,
+
+		const resizedB = resize(
+			inputImageB,
+			inputImageA.get_width(),
+			inputImageA.get_height(),
 			SamplingFilter.Nearest
 		);
+		blend(inputImageA, resizedB, "xor")
 
-
+		// resize image using photon
 		// get webp bytes
-		const outputBytes = outputImage.get_bytes_webp();
+		const outputBytes = inputImageA.get_bytes_webp();
 
 		// for other formats
 		// png  : outputImage.get_bytes();
 		// jpeg : outputImage.get_bytes_jpeg(quality);
 
 		// call free() method to free memory
-		inputImage.free();
-		outputImage.free();
+		inputImageA.free();
+		inputImageB.free();
 
 		// return the Response instance
 		return new Response(outputBytes, {
