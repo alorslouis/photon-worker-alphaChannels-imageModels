@@ -1,17 +1,4 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
-import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
+import { PhotonImage, SamplingFilter, blend, resize, } from "@cf-wasm/photon";
 import * as photon from "@cf-wasm/photon";
 
 export default {
@@ -50,27 +37,67 @@ export default {
 
 		const rawPStringVex: string[] = []
 
-		const rawPix = inputImageA.get_raw_pixels()
 
-		for (let i = 0; i < rawPix.length; i += 4) {
-			rawPixVex.push({
-				r: rawPix[i],
-				g: rawPix[i + 1],
-				b: rawPix[i + 2],
-				a: rawPix[i + 3],
-			})
+		//for (let i = 0; i < rawPixA.length; i += 4) {
+		//	rawPixVex.push({
+		//		r: rawPixA[i],
+		//		g: rawPixA[i + 1],
+		//		b: rawPixA[i + 2],
+		//		a: rawPixA[i + 3],
+		//	})
+		//
+		//
+		//	rawPixA[i + 3] !== 0 && rawPStringVex.push(JSON.stringify({
+		//		r: rawPixA[i],
+		//		g: rawPixA[i + 1],
+		//		b: rawPixA[i + 2],
+		//		a: rawPixA[i + 3],
+		//	}))
+		//}
+
+		const resizedB = resize(
+			inputImageB,
+			inputImageA.get_width(),
+			inputImageA.get_height(),
+			SamplingFilter.Nearest
+		);
+
+		const rawPixA = inputImageA.get_raw_pixels()
+		const rawPixB = inputImageB.get_raw_pixels()
+
+		const newImageRawArray: number[][] = []
+
+		async function ProcessPixels() {
+
+			for (let i = 0; i < rawPixA.length; i += 4) {
+				const sliceImageA: RPVex = {
+					r: rawPixA[i],
+					g: rawPixA[i + 1],
+					b: rawPixA[i + 2],
+					a: rawPixA[i + 3],
+				}
+				const sliceImageB: RPVex = {
+					r: rawPixB[i],
+					g: rawPixB[i + 1],
+					b: rawPixB[i + 2],
+					a: rawPixB[i + 3],
+				}
 
 
-			rawPStringVex.push(JSON.stringify({
-				r: rawPix[i],
-				g: rawPix[i + 1],
-				b: rawPix[i + 2],
-				a: rawPix[i + 3],
-			}))
+				if (sliceImageA.a === 0) {
+					newImageRawArray.push(Object.values(sliceImageA))
+				} else {
+					newImageRawArray.push(Object.values(sliceImageB))
+				}
+			}
+
+
 		}
 
-		console.log(rawPixVex.slice(-10))
-		console.log(new Set(rawPStringVex))
+		await ProcessPixels()
+
+		//console.log(rawPixVex.slice(-10))
+		//console.log([...new Set(rawPStringVex)].map(x => JSON.parse(x)))
 
 		const blendModes = [
 			"overlay",
@@ -89,13 +116,35 @@ export default {
 			"exclusion"
 		]
 
-		const resizedB = resize(
-			inputImageB,
-			inputImageA.get_width(),
-			inputImageA.get_height(),
-			SamplingFilter.Nearest
-		);
-		blend(inputImageA, resizedB, blendModes[3])
+		blend(inputImageA, resizedB, blendModes[6])
+
+
+		const flatIntArray = newImageRawArray.flat()
+
+		console.log(flatIntArray.slice(0, 20))
+
+
+		const buffer = new ArrayBuffer(flatIntArray.length);
+		const uint8Array = new Uint8Array(buffer);
+
+		// Copy the data into the Uint8Array
+		for (let i = 0; i < flatIntArray.length; i++) {
+			uint8Array[i] = flatIntArray[i];
+		}
+
+		console.log(buffer.slice(0, 10))
+		console.log(uint8Array.slice(0, 10))
+		//const rawPStringArrayBuff = new Uint8ClampedArray(flatIntArray)
+
+		//console.log(rawPStringArrayBuff.slice(-20))
+
+		let f = inputImageA.get_image_data()
+		f.raw_pixels = flatIntArray
+
+		inputImageA.set_imgdata(f)
+
+		//const newImgBytes = PhotonImage.new_from_byteslice(uint8Array)
+		//const newOutputBytes = newImgBytes.get_bytes_webp()
 
 		// resize image using photon
 		// get webp bytes
@@ -108,6 +157,7 @@ export default {
 		// call free() method to free memory
 		inputImageA.free();
 		inputImageB.free();
+		resizedB.free();
 
 		// return the Response instance
 		return new Response(outputBytes, {
