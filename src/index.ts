@@ -1,4 +1,4 @@
-import { PhotonImage, SamplingFilter, blend, resize, } from "@cf-wasm/photon";
+import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
 import * as photon from "@cf-wasm/photon";
 
 export default {
@@ -26,6 +26,7 @@ export default {
 		const inputImageA = PhotonImage.new_from_byteslice(inputBytesA);
 		const inputImageB = PhotonImage.new_from_byteslice(inputBytesB);
 
+
 		interface RPVex {
 			r: number,
 			g: number,
@@ -39,6 +40,8 @@ export default {
 
 		const rawPixA = inputImageA.get_raw_pixels()
 		const rawPixB = inputImageB.get_raw_pixels()
+
+		if (rawPixA.length % 4 !== 0) throw new Error("fack")
 
 		for (let i = 0; i < rawPixA.length; i += 4) {
 			rawPixVex.push({
@@ -86,13 +89,13 @@ export default {
 					a: rawPixB[i + 3],
 				}
 
-				newImageRawArray.push(Object.values(sliceImageA))
+				//newImageRawArray.push(Object.values(sliceImageA))
 
-				//if (sliceImageA.a === 0) {
-				//	newImageRawArray.push(Object.values(sliceImageA))
-				//} else {
-				//	newImageRawArray.push(Object.values(sliceImageB))
-				//}
+				if (sliceImageB.a === 0) {
+					newImageRawArray.push(Object.values(sliceImageB))
+				} else {
+					newImageRawArray.push(Object.values(sliceImageA))
+				}
 			}
 
 
@@ -129,23 +132,29 @@ export default {
 
 
 
-		const clampedArray = new Uint8ClampedArray(flatIntArray)
+		//const clampedArray = new Uint8ClampedArray(flatIntArray)
 
-		console.log(clampedArray.slice(-10))
-
-		for (let i = 0; i < flatIntArray.length; i++) {
-			clampedArray[i] = flatIntArray[i]
-		}
+		//console.log(clampedArray.slice(-10))
+		//
+		//for (let i = 0; i < flatIntArray.length; i++) {
+		//	clampedArray[i] = flatIntArray[i]
+		//}
 
 		let f = inputImageA.get_image_data()
 
+		const customImageData = {
+			data: new Uint8ClampedArray(flatIntArray),
+			width: inputImageA.get_width(),
+			height: inputImageA.get_height()
+		};
 		const { data, ...rest } = f
 		console.log(rest)
 
 		//f.raw_pixels = flatIntArray
+		//inputImageA.raw_pixels = flatIntArray
 		//console.log(f)
 
-		inputImageA.set_imgdata(f)
+		inputImageA.set_imgdata(customImageData)
 
 
 		// resize image using photon
