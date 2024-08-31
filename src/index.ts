@@ -70,6 +70,8 @@ export default {
 			SamplingFilter.Nearest
 		);
 
+		const resizedBRaw = resizedB.get_raw_pixels()
+
 
 		const newImageRawArray: number[][] = []
 
@@ -83,18 +85,18 @@ export default {
 					a: rawPixA[i + 3],
 				}
 				const sliceImageB: RPVex = {
-					r: rawPixB[i],
-					g: rawPixB[i + 1],
-					b: rawPixB[i + 2],
-					a: rawPixB[i + 3],
+					r: resizedBRaw[i],
+					g: resizedBRaw[i + 1],
+					b: resizedBRaw[i + 2],
+					a: resizedBRaw[i + 3],
 				}
 
 				//newImageRawArray.push(Object.values(sliceImageA))
 
-				if (sliceImageB.a === 0) {
-					newImageRawArray.push(Object.values(sliceImageB))
-				} else {
+				if (sliceImageB.a !== 0) {
 					newImageRawArray.push(Object.values(sliceImageA))
+				} else {
+					newImageRawArray.push(Object.values(sliceImageB))
 				}
 			}
 
@@ -130,8 +132,6 @@ export default {
 
 		console.log(flatIntArray.slice(0, 20))
 
-
-
 		//const clampedArray = new Uint8ClampedArray(flatIntArray)
 
 		//console.log(clampedArray.slice(-10))
@@ -147,17 +147,9 @@ export default {
 			width: inputImageA.get_width(),
 			height: inputImageA.get_height()
 		};
-		const { data, ...rest } = f
-		console.log(rest)
-
-		//f.raw_pixels = flatIntArray
-		//inputImageA.raw_pixels = flatIntArray
-		//console.log(f)
 
 		inputImageA.set_imgdata(customImageData)
 
-
-		// resize image using photon
 		// get webp bytes
 		const outputBytes = inputImageA.get_bytes_webp();
 
