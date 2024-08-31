@@ -12,11 +12,11 @@
  */
 
 import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
+import * as photon from "@cf-wasm/photon";
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		// url of image to fetch
-
 		// fetch image and get the Uint8Array instance
 		const formData = await request.formData();
 		const imageFile = formData.get('image1');
@@ -39,6 +39,55 @@ export default {
 		const inputImageA = PhotonImage.new_from_byteslice(inputBytesA);
 		const inputImageB = PhotonImage.new_from_byteslice(inputBytesB);
 
+		interface RPVex {
+			r: number,
+			g: number,
+			b: number,
+			a: number,
+		}
+
+		const rawPixVex: RPVex[] = []
+
+		const rawPStringVex: string[] = []
+
+		const rawPix = inputImageA.get_raw_pixels()
+
+		for (let i = 0; i < rawPix.length; i += 4) {
+			rawPixVex.push({
+				r: rawPix[i],
+				g: rawPix[i + 1],
+				b: rawPix[i + 2],
+				a: rawPix[i + 3],
+			})
+
+
+			rawPStringVex.push(JSON.stringify({
+				r: rawPix[i],
+				g: rawPix[i + 1],
+				b: rawPix[i + 2],
+				a: rawPix[i + 3],
+			}))
+		}
+
+		console.log(rawPixVex.slice(-10))
+		console.log(new Set(rawPStringVex))
+
+		const blendModes = [
+			"overlay",
+			"over",
+			"atop",
+			"xor",
+			"multiply",
+			"burn",
+			"soft_light",
+			"hard_light",
+			"difference",
+			"lighten",
+			"darken",
+			"dodge",
+			"plus",
+			"exclusion"
+		]
 
 		const resizedB = resize(
 			inputImageB,
@@ -46,7 +95,7 @@ export default {
 			inputImageA.get_height(),
 			SamplingFilter.Nearest
 		);
-		blend(inputImageA, resizedB, "xor")
+		blend(inputImageA, resizedB, blendModes[3])
 
 		// resize image using photon
 		// get webp bytes
