@@ -11,7 +11,7 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { PhotonImage, SamplingFilter, resize } from "@cf-wasm/photon";
+import { PhotonImage, SamplingFilter, resize, emboss } from "@cf-wasm/photon";
 
 export default {
 	async fetch() {
@@ -29,10 +29,11 @@ export default {
 		// resize image using photon
 		const outputImage = resize(
 			inputImage,
-			inputImage.get_width() * 0.5,
-			inputImage.get_height() * 0.5,
+			inputImage.get_width() * 2,
+			inputImage.get_height() * 2,
 			SamplingFilter.Nearest
 		);
+
 
 		// get webp bytes
 		const outputBytes = outputImage.get_bytes_webp();
