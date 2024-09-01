@@ -1,6 +1,23 @@
 import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
 import * as photon from "@cf-wasm/photon";
 
+const blendModes = [
+	"overlay",
+	"over",
+	"atop",
+	"xor",
+	"multiply",
+	"burn",
+	"soft_light",
+	"hard_light",
+	"difference",
+	"lighten",
+	"darken",
+	"dodge",
+	"plus",
+	"exclusion"
+]
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		// url of image to fetch
@@ -105,42 +122,10 @@ export default {
 
 		await ProcessPixels()
 
-		//console.log(rawPixVex.slice(-10))
-		//console.log([...new Set(rawPStringVex)].map(x => JSON.parse(x)))
-
-		const blendModes = [
-			"overlay",
-			"over",
-			"atop",
-			"xor",
-			"multiply",
-			"burn",
-			"soft_light",
-			"hard_light",
-			"difference",
-			"lighten",
-			"darken",
-			"dodge",
-			"plus",
-			"exclusion"
-		]
-
-		//blend(inputImageA, resizedB, blendModes[6])
-
-
 		const flatIntArray = newImageRawArray.flat()
 
 		console.log(flatIntArray.slice(0, 20))
 
-		//const clampedArray = new Uint8ClampedArray(flatIntArray)
-
-		//console.log(clampedArray.slice(-10))
-		//
-		//for (let i = 0; i < flatIntArray.length; i++) {
-		//	clampedArray[i] = flatIntArray[i]
-		//}
-
-		let f = inputImageA.get_image_data()
 
 		const customImageData = {
 			data: new Uint8ClampedArray(flatIntArray),
