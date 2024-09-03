@@ -1,5 +1,4 @@
 import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
-import * as photon from "@cf-wasm/photon";
 
 const blendModes = [
 	"overlay",
@@ -29,16 +28,14 @@ export default {
 			return new Response('image file error', { status: 400 });
 		}
 
-		// Convert the image file to a Uint8Array
-		// image A
+		// image A - depth map
 		const arrayBufferA = await depthMap.arrayBuffer();
 		const inputBytesA = new Uint8Array(arrayBufferA);
 
-		// image B
+		// image B - reference transparent
 		const arrayBufferB = await referenceImage.arrayBuffer();
 		const inputBytesB = new Uint8Array(arrayBufferB);
 
-		// create a PhotonImage instance
 		const inputImageA = PhotonImage.new_from_byteslice(inputBytesA);
 		const inputImageB = PhotonImage.new_from_byteslice(inputBytesB);
 
@@ -49,7 +46,6 @@ export default {
 			b: number,
 			a: number,
 		}
-
 
 		const rawPixA = inputImageA.get_raw_pixels()
 
@@ -103,7 +99,6 @@ export default {
 			SamplingFilter.Nearest
 		)
 
-		// get webp bytes
 		const outputBytes = resizedA.get_bytes_webp();
 
 		// call free() method to free memory
@@ -112,7 +107,6 @@ export default {
 		resizedB.free();
 		resizedA.free();
 
-		// return the Response instance
 		return new Response(outputBytes, {
 			headers: {
 				"Content-Type": "image/webp"
