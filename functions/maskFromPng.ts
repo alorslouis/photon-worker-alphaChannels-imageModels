@@ -1,16 +1,14 @@
-import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
+import { PhotonImage } from "@cf-wasm/photon";
 
 export async function MaskFromPNG(formDataIn: FormData) {
 
 	const formData = formDataIn;
 	const depthMap = formData.get("inputPNG");
-	//const referenceImage = formData.get('referenceTransparent');
 
 	if (!depthMap || typeof depthMap === "string") {
 		return new Response('image file error', { status: 400 });
 	}
 
-	// image A - depth map
 	const arrayBufferA = await depthMap.arrayBuffer();
 	const inputBytesA = new Uint8Array(arrayBufferA);
 
@@ -42,12 +40,15 @@ export async function MaskFromPNG(formDataIn: FormData) {
 
 		// ew gross
 		// but nicer than .flat ¯\_(ツ)_/¯
+		// NOTE: magic number
 		if (sliceImageA.a >= 200) {
 			//newImageRawArray.push(sliceImageA.r, sliceImageA.g, sliceImageA.b, sliceImageA.a)
 			newImageRawArray.push(255, 255, 255, 255)
 		} else {
 			newImageRawArray.push(0, 0, 0, 255)
 		}
+		// INFO: IT DOESN'T MATTER IF YOU'RE BLACK OR WHITE
+		// (except with depth masks for inpainting - so here it *is* black or white)
 	}
 
 	console.log({ alphaSet })
@@ -60,18 +61,11 @@ export async function MaskFromPNG(formDataIn: FormData) {
 
 	inputImageA.set_imgdata(customImageData)
 
-	//const resizedA = resize(
-	//	inputImageA,
-	//	inputImageA.get_width() * 0.5,
-	//	inputImageA.get_height() * 0.5,
-	//	SamplingFilter.Nearest
-	//)
 
 	const outputBytes = inputImageA.get_bytes_webp();
 
 	// call free() method to free memory
 	inputImageA.free();
-	//resizedA.free();
 
 	return outputBytes
 }
