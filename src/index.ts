@@ -1,4 +1,5 @@
 import { PhotonImage, SamplingFilter, blend, resize } from "@cf-wasm/photon";
+import { MaskFromPNG } from "../functions/maskFromPng"
 
 const blendModes = [
 	"overlay",
@@ -19,6 +20,23 @@ const blendModes = [
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
+
+		const reqUrl = new URL(request.url)
+
+		if (reqUrl.pathname === "/pngMask") {
+			console.log("right path!")
+			const f = await MaskFromPNG(await request.formData())
+
+			if (f) {
+
+				return new Response(f, {
+					headers: {
+						"Content-Type": "image/webp"
+					}
+				});
+			}
+
+		}
 
 		const formData = await request.formData();
 		const depthMap = formData.get('depthMap');
